@@ -107,7 +107,7 @@ $endItem = min($offset + count($videos), $total);
 				<a href="upload.php" class="btn btn-lg btn-secondary rounded-5 fs-3 p-4">
 					<i class="bi bi-disc-fill fs-1"></i>
 					<br>
-					Inserer le disque
+					Inserer un disque
 				</a>
 			</div>
 		</div>
@@ -116,7 +116,7 @@ $endItem = min($offset + count($videos), $total);
 				<h2 class="text-uppercase"><i class="bi bi-camera-video-fill"></i> videos</h2>
 			</div>
 			<div class="col-2 text-end m-auto">
-				<button type="button" id="onlyFavoritesSwitch" class="btn btn-outline-dark <?= $favFilter ? 'active' : '' ?>" data-bs-toggle="button"><i class="bi bi-heart-fill"></i> Favoris</button>
+				<button type="button" id="onlyFavoritesSwitch" class="btn btn-outline-dark rounded-6 <?= $favFilter ? 'active' : '' ?>" data-bs-toggle="button"><i class="bi bi-heart-fill"></i> Favoris</button>
 			</div>
 			<div class="col m-auto">
 				<form method="get" class="input-group shadow-sm rounded-6">
