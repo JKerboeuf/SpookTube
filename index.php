@@ -134,7 +134,6 @@ $endItem = min($offset + count($videos), $total);
 					<i class="bi bi-camera-video-off-fill fs-1"></i>
 				</h1>
 			<?php else: ?>
-				<p class="text-muted">Showing <?= $startItem ?>–<?= $endItem ?> of <?= $total ?> videos</p>
 				<div class="row row-cols-4 g-5 mt-1">
 					<?php foreach ($videos as $v): list($avg, $cnt) = avg_rating($pdo, $v['id']); ?>
 						<div class="col mt-1">
