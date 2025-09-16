@@ -103,6 +103,245 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			</div>
 		</div>
 	</main>
+
+
+
+
+	<div class="modal fade bg-light" id="dupModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-xl modal-dialog-scrollable bg-light rounded-6">
+			<div class="modal-content rounded-5 shadow">
+				<div class="modal-header bg-white">
+					<h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> Vidéo potentiellement dupliquée</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+
+				<div class="modal-body bg-light">
+					<div class="container-fluid">
+						<div class="row gy-3">
+							<!-- Left: Local preview -->
+							<div class="col-md-5">
+								<h6>Ta video</h6>
+								<div class="border p-2 rounded-6 bg-white">
+									<video id="localPreviewVideo" controls style="width:100%; height:240px; background:black; display:block;">
+										Your browser does not support the video element.
+									</video>
+									<div id="localInfo" class="mt-2 text-muted"></div>
+								</div>
+							</div>
+
+							<!-- Right: Matches list -->
+							<div class="col-md-7">
+								<h6>Vidéos similaires</h6>
+								<div id="dupMatches" class="list-group rounded-6"></div>
+								<p class="mt-2 text-muted">Si l'une de ces vidéos est la même que la votre, merci d'annuler votre publication.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="modal-footer bg-white">
+					<button type="button" id="cancelUploadBtn" class="btn btn-dark rounded-6" data-bs-dismiss="modal"><i class="bi bi-x-circle-fill"></i> Annuler</button>
+					<button type="button" id="continueUploadBtn" class="btn btn-outline-dark rounded-6"><i class="bi bi-check-circle-fill"></i> Publier quand même</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+		crossorigin="anonymous"></script>
+
+	<script>
+		(function() {
+			const form = document.getElementById('uploadForm');
+			const fileInput = document.getElementById('videoInput');
+			const dupModalEl = document.getElementById('dupModal');
+			const dupMatchesEl = document.getElementById('dupMatches');
+			const continueBtn = document.getElementById('continueUploadBtn');
+			const cancelBtn = document.getElementById('cancelUploadBtn');
+			const localVideo = document.getElementById('localPreviewVideo');
+			const localInfo = document.getElementById('localInfo');
+
+			// Bootstrap modal instance
+			let dupModal = null;
+			if (typeof bootstrap !== 'undefined') {
+				dupModal = new bootstrap.Modal(dupModalEl, {
+					keyboard: true
+				});
+			}
+
+			// keep track of object URL to revoke it when done
+			let localObjectUrl = null;
+
+			// helper: format bytes
+			function formatBytes(bytes) {
+				if (bytes === 0) return '0 B';
+				const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+				const i = Math.floor(Math.log(bytes) / Math.log(1024));
+				return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
+			}
+
+			// simple HTML escape
+			function escapeHtml(s) {
+				if (s === null || s === undefined) return '';
+				return String(s).replace(/[&<>"']/g, function(m) {
+					return ({
+						'&': '&amp;',
+						'<': '&lt;',
+						'>': '&gt;',
+						'"': '&quot;',
+						"'": '&#39;'
+					})[m];
+				});
+			}
+
+			// populate matches into the list (no select, just view link)
+			function renderMatches(matches) {
+				dupMatchesEl.innerHTML = '';
+				if (!matches.length) {
+					dupMatchesEl.innerHTML = '<div class="alert alert-info mb-0">No similar videos found on the server.</div>';
+					return;
+				}
+				matches.forEach(m => {
+					const el = document.createElement('div');
+					el.className = 'list-group-item d-flex gap-3 align-items-start';
+					console.log(encodeURIComponent(m.filename));
+					const thumbHtml = '<video controls src="serve_video.php?f=' + encodeURIComponent(m.filename) + '" style="width:210px;height:210px;object-fit:cover;border-radius:4px;">';
+					el.innerHTML = `
+						<div style="flex:0 0 1">${thumbHtml}</div>
+						<div style="flex:1">
+							<div class="fw-bold">${escapeHtml(m.title)}</div>
+							<div class="text-muted small">By ${escapeHtml(m.username)}
+							<br>${escapeHtml(m.file_date)}
+							<br>${escapeHtml(m.filesize)} octets</div>
+							<div class="mt-2"><a class="btn btn-dark rounded-6" href="${escapeHtml(m.url)}" target="_blank" rel="noopener">Ouvrir <i class="bi bi-box-arrow-up-right"></i></a></div>
+						</div>
+					`;
+					dupMatchesEl.appendChild(el);
+				});
+			}
+
+			// Clear local preview and revoke object URL
+			function clearLocalPreview() {
+				if (localObjectUrl) {
+					try {
+						URL.revokeObjectURL(localObjectUrl);
+					} catch (e) {}
+					localObjectUrl = null;
+				}
+				localVideo.pause();
+				localVideo.removeAttribute('src');
+				localVideo.load();
+				localInfo.textContent = '';
+			}
+
+			// intercept submit to perform pre-check
+			form.addEventListener('submit', function(ev) {
+				ev.preventDefault();
+				const f = fileInput.files[0];
+				if (!f) {
+					alert('Choose a file first');
+					return;
+				}
+
+				const fileDateMs = f.lastModified || 0;
+				const filesize = f.size || 0;
+
+				// if file date not available, skip pre-check
+				if (!fileDateMs) {
+					form.submit();
+					return;
+				}
+
+				// disable buttons while checking
+				continueBtn.disabled = true;
+				cancelBtn.disabled = true;
+
+				fetch('duplicate_check.php', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						file_date: fileDateMs,
+						filesize: filesize
+					})
+				}).then(r => r.json()).then(data => {
+					// if something goes wrong, proceed with upload
+					if (!data || !data.success) {
+						form.submit();
+						return;
+					}
+
+					const matches = data.matches || [];
+
+					// prepare local preview (object URL)
+					try {
+						clearLocalPreview();
+						localObjectUrl = URL.createObjectURL(f);
+						localVideo.src = localObjectUrl;
+						localInfo.innerHTML = `${f.name}<br>${(new Date(fileDateMs)).toLocaleString()}<br>${f.size} octets`;
+					} catch (e) {
+						localInfo.innerHTML = 'Preview not available';
+					}
+
+					// render matches and show modal only if matches found
+					if (!matches.length) {
+						// no duplicates -> proceed with upload
+						// cleanup object URL after a short delay (let browser keep playing if user wishes)
+						setTimeout(clearLocalPreview, 2000);
+						form.submit();
+						return;
+					}
+
+					renderMatches(matches);
+
+					// enable modal buttons and show it
+					continueBtn.disabled = false;
+					cancelBtn.disabled = false;
+					if (dupModal) dupModal.show();
+				}).catch(err => {
+					console.error(err);
+					// fallback: submit if pre-check fails
+					form.submit();
+				});
+			});
+
+			// Continue upload -> hide modal and submit form
+			continueBtn.addEventListener('click', function() {
+				if (dupModal) dupModal.hide();
+				// small delay to allow modal to close smoothly
+				setTimeout(() => {
+					form.submit();
+				}, 150);
+			});
+
+			// Cancel upload -> clear file input, revoke preview, and close modal
+			cancelBtn.addEventListener('click', function() {
+				try {
+					fileInput.value = '';
+				} catch (e) {
+					console.warn(e);
+				}
+				clearLocalPreview();
+				// modal will auto-hide due to data-bs-dismiss on the button
+			});
+
+			// also clean up when modal fully hidden (revoke url so memory freed)
+			if (dupModalEl) {
+				dupModalEl.addEventListener('hidden.bs.modal', function() {
+					// do not revoke immediately if user still playing - but we cleared on cancel/continue
+					// safe to revoke here as a final cleanup
+					clearLocalPreview();
+				});
+			}
+
+		})();
+	</script>
+
+
+
+
 	<script>
 		// capture the file's last modified timestamp (from browser) and send as ms since epoch
 		const input = document.getElementById('videoInput');
