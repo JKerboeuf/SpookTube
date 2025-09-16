@@ -33,8 +33,11 @@ try {
 	$pdo->commit();
 	$fpath = $config['upload_dir'] . DIRECTORY_SEPARATOR . $v['filename'];
 	if (is_file($fpath)) @unlink($fpath);
-	header('Location: index.php');
-	exit;
+if (!empty($v['thumbnail'])) {
+$tpath = $config['thumb_dir'] . DIRECTORY_SEPARATOR . $v['thumbnail'];
+if (is_file($tpath)) @unlink($tpath);
+}
+header('Location: index.php'); exit;
 } catch (Exception $e) {
 	if ($pdo->inTransaction()) $pdo->rollBack();
 	echo 'Error: ' . h($e->getMessage());
