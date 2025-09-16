@@ -88,9 +88,6 @@ label {
 	--bs-pagination-active-color: white !important;
 	--bs-pagination-active-bg: black !important;
 	--bs-pagination-active-border-color: black !important;
-	--bs-pagination-disabled-color: var(--bs-secondary-color);
-	--bs-pagination-disabled-bg: var(--bs-secondary-bg);
-	--bs-pagination-disabled-border-color: var(--bs-border-color);
 }
 
 .full-height {

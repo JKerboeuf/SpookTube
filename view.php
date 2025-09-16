@@ -14,6 +14,9 @@ list($avg, $cnt) = avg_rating($pdo, $id);
 $stmt = $pdo->prepare('SELECT rating FROM ratings WHERE video_id = ? AND user_id = ?');
 $stmt->execute([$id, $_SESSION['user_id']]);
 $myRating = $stmt->fetchColumn();
+$stmt = $pdo->prepare('SELECT 1 FROM favorites WHERE user_id = ? AND video_id = ?');
+$stmt->execute([$_SESSION['user_id'], $v['id']]);
+$isFav = (bool)$stmt->fetchColumn();
 ?>
 <!doctype html>
 <html class="h-100">
@@ -88,12 +91,18 @@ $myRating = $stmt->fetchColumn();
 								Note moyenne : <?= render_stars($avg, $cnt) ?>
 							</div>
 						</div>
-
 						<div class="col my-auto">
 							<div class="d-flex flex-row justify-content-center align-items-center">
 								<div id="userRating" role="radiogroup" style="display:inline-block"></div>
 								<div id="rateResult" class="ms-2"></div>
 							</div>
+						</div>
+						<div class="col my-auto">
+							<?php if ($isFav): ?>
+								<button type="button" id="onlyFavoritesSwitch" data-video-id="<?= (int)$v['id'] ?>" aria-pressed="true" class="btn btn-outline-dark active rounded-6"><i class="bi bi-heart-fill"></i> Favori</button>
+							<?php else: ?>
+								<button type="button" id="onlyFavoritesSwitch" data-video-id="<?= (int)$v['id'] ?>" aria-pressed="false" class="btn btn-outline-dark rounded-6"><i class="bi bi-heart"></i> Ajouter aux favoris</button>
+							<?php endif; ?>
 						</div>
 					</div>
 					<hr class="mx-2">
@@ -141,6 +150,65 @@ $myRating = $stmt->fetchColumn();
 			color: #000;
 		}
 	</style>
+
+	<script>
+		(function() {
+			// delegate clicks on favorite buttons (works for multiple buttons)
+			btn = document.getElementById("onlyFavoritesSwitch");
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				const vid = btn.dataset.videoId;
+				if (!vid) return;
+
+				// optimistic UI: toggle icon while request in progress
+				const wasFav = btn.getAttribute('aria-pressed') === 'true';
+
+				fetch('toggle_favorite.php', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						video_id: parseInt(vid, 10)
+					}),
+					credentials: 'same-origin'
+				}).then(r => r.json()).then(data => {
+					if (!data || !data.success) {
+						// revert on error
+						if (wasFav) {
+							btn.setAttribute('aria-pressed', 'true');
+							btn.classList.add('active');
+						} else {
+							btn.setAttribute('aria-pressed', 'false');
+							btn.classList.remove('active');
+						}
+						alert(data && data.error ? data.error : 'Could not toggle favorite');
+					} else {
+						if (wasFav) {
+							btn.setAttribute('aria-pressed', 'false');
+							btn.classList.remove('active');
+							btn.innerHTML = '<i class="bi bi-heart"></i> Retiré des favoris';
+						} else {
+							btn.setAttribute('aria-pressed', 'true');
+							btn.classList.add('active');
+							btn.innerHTML = '<i class="bi bi-heart-fill"></i> Ajouté aux favoris';
+						}
+					}
+				}).catch(err => {
+					console.error(err);
+					// revert UI
+					if (wasFav) {
+						btn.setAttribute('aria-pressed', 'true');
+						btn.classList.add('active');
+					} else {
+						btn.setAttribute('aria-pressed', 'false');
+						btn.classList.remove('active');
+					}
+					alert('Network error');
+				});
+			});
+		})();
+	</script>
 
 	<script>
 		(function() {

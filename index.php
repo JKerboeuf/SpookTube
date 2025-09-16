@@ -12,10 +12,15 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 12; // change this to show more/less per page
 $offset = ($page - 1) * $perPage;
 
+// get favorites filter from query
+$favFilter = isset($_GET['favorites']) && ($_GET['favorites'] === '1' || $_GET['favorites'] === 'true');
+
 // build WHERE conditions and params
-$sqlBase = 'FROM videos v JOIN users u ON v.user_id = u.id';
+$sqlBase = 'FROM videos v
+            JOIN users u ON v.user_id = u.id
+            LEFT JOIN favorites f ON f.video_id = v.id AND f.user_id = :current_user';
 $conds = [];
-$params = [];
+$params = [':current_user' => $_SESSION['user_id']];
 if ($q !== '') {
 	$conds[] = 'v.title LIKE :q';
 	$params[':q'] = "%$q%";
@@ -24,26 +29,24 @@ if ($filterChar !== '') {
 	$conds[] = 'v.characters LIKE :character';
 	$params[':character'] = "%$filterChar%";
 }
+if ($favFilter) {
+	// only show videos that have a favorite row for this user
+	$conds[] = 'f.id IS NOT NULL';
+}
 $where = $conds ? ' WHERE ' . implode(' AND ', $conds) : '';
 
 try {
 	// total count
 	$countSql = "SELECT COUNT(*) AS cnt $sqlBase $where";
 	$stmt = $pdo->prepare($countSql);
-	foreach ($params as $k => $v) {
-		$stmt->bindValue($k, $v);
-	}
+	foreach ($params as $k => $v) $stmt->bindValue($k, $v);
 	$stmt->execute();
 	$total = (int)$stmt->fetchColumn();
 
 	// fetch page rows with LIMIT/OFFSET (bind as integers)
-	$selectSql = "SELECT v.*, u.username $sqlBase $where ORDER BY v.file_date DESC LIMIT :limit OFFSET :offset";
+	$selectSql = "SELECT v.*, u.username, (f.id IS NOT NULL) AS is_fav $sqlBase $where ORDER BY v.file_date DESC LIMIT :limit OFFSET :offset";
 	$stmt = $pdo->prepare($selectSql);
-	// bind search params
-	foreach ($params as $k => $v) {
-		$stmt->bindValue($k, $v);
-	}
-	// bind limit / offset as integers
+	foreach ($params as $k => $v) $stmt->bindValue($k, $v);
 	$stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
 	$stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
 	$stmt->execute();
@@ -109,8 +112,11 @@ $endItem = min($offset + count($videos), $total);
 			</div>
 		</div>
 		<div class="row mx-2">
-			<div class="col">
+			<div class="col-4 m-auto">
 				<h2 class="text-uppercase"><i class="bi bi-camera-video-fill"></i> videos</h2>
+			</div>
+			<div class="col-2 text-end m-auto">
+				<button type="button" id="onlyFavoritesSwitch" class="btn btn-outline-dark <?= $favFilter ? 'active' : '' ?>" data-bs-toggle="button"><i class="bi bi-heart-fill"></i> Favoris</button>
 			</div>
 			<div class="col m-auto">
 				<form method="get" class="input-group shadow-sm rounded-6">
@@ -138,14 +144,9 @@ $endItem = min($offset + count($videos), $total);
 					<?php foreach ($videos as $v): list($avg, $cnt) = avg_rating($pdo, $v['id']); ?>
 						<div class="col mt-1">
 							<div class="card card-white shadow-sm border-0 rounded-5">
-								<!--<video muted class="rounded-top-5" preload="none">
-									<source src="serve_video.php?f=<?= urlencode($v['filename']) ?>">
-									Your browser does not support HTML5 video.
-								</video>-->
 								<?php if (!empty($v['thumbnail'])): ?>
 									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb">
 								<?php else: ?>
-									<!-- placeholder img; JS will generate, set src, then optionally upload -->
 									<img class="thumb lazy-thumb"
 										data-video-src="serve_video.php?f=<?= urlencode($v['filename']) ?>"
 										data-video-id="<?= (int)$v['id'] ?>"
@@ -155,7 +156,8 @@ $endItem = min($offset + count($videos), $total);
 								<div class="card-body">
 									<a href="view.php?id=<?= $v['id'] ?>" class="card-title h5 text-decoration-none stretched-link"><?= h($v['title']) ?></a>
 									<div class="chars"><i class="bi bi-person-standing"></i><?= h($v['characters']) ?></div>
-									<div class="rating"><?= render_stars($avg, $cnt) ?></div>
+									<div class="rating"><?= render_stars($avg, $cnt) ?> <?= $v['is_fav'] ? '<i class="bi bi-heart-fill"></i>' : '' ?>
+									</div>
 									<div class="filedate"><i class="bi bi-calendar3"></i> <?= h(format_date_ddmmyyyy($v['file_date'])) ?></div>
 								</div>
 							</div>
@@ -213,6 +215,18 @@ $endItem = min($offset + count($videos), $total);
 		integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
 		crossorigin="anonymous"></script>
 
+	<script>
+		document.getElementById('onlyFavoritesSwitch').addEventListener('click', function() {
+			const checked = this.classList.contains('active') ? '1' : '0';
+			console.log('fav switch', checked);
+			// rebuild query string preserving q and character
+			const params = new URLSearchParams(window.location.search);
+			if (checked === '1') params.set('favorites', '1');
+			else params.delete('favorites');
+			params.delete('page'); // go back to page 1
+			window.location.search = params.toString();
+		});
+	</script>
 
 	<script>
 		(() => {
