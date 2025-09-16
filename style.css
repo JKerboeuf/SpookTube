@@ -1,0 +1,112 @@
+body {
+	font-family: Arial, sans-serif !important;
+}
+
+label {
+	display: block;
+	margin: 8px 0;
+}
+
+.video-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px
+}
+
+.video-card {
+	width: 220px;
+	border: 1px solid #ddd;
+	padding: 8px;
+	border-radius: 6px
+}
+
+.meta {
+	padding-top: 6px
+}
+
+.title {
+	font-weight: bold
+}
+
+.chars {
+	font-size: 0.9em;
+	color: #444
+}
+
+.rating {
+	font-size: 0.9em;
+	color: #222
+}
+
+.filedate {
+	font-size: 0.85em;
+	color: #666
+}
+
+.rounded-6 {
+	border-radius: 0.65rem !important;
+}
+
+.rounded-start-6 {
+	border-top-left-radius: 0.65rem !important;
+	border-bottom-left-radius: 0.65rem !important;
+}
+
+.rounded-end-6 {
+	border-top-right-radius: 0.65rem !important;
+	border-bottom-right-radius: 0.65rem !important;
+}
+
+.btn-secondary {
+	background-color: #ebecec !important;
+	border-color: #ebecec !important;
+	color: #3b3d48 !important;
+}
+
+.btn-secondary:hover {
+	background-color: #d4d5d9 !important;
+	border-color: #d4d5d9 !important;
+	color: #3b3d48 !important;
+}
+
+.form-control:focus {
+	border-color: #9ea0a3 !important;
+	box-shadow: 0 0 0 .2rem rgba(117, 117, 117, 0.25) !important;
+}
+
+.full-height {
+	height: 100% !important;
+	max-height: 100vh !important;
+}
+
+.video-wrapper,
+.col.d-flex {
+	min-height: 0;
+}
+
+/* make sure video doesn't add extra margins or overflow */
+video {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+	display: block;
+}
+
+/* optional: ensure body/html fill viewport */
+html,
+body {
+	height: 100%;
+}
+
+main,
+.container-fluid,
+.row,
+.col,
+.video-wrapper {
+	min-height: 0;
+}
+
+/* optional: avoid body margins that might add height */
+body {
+	margin: 0;
+}
