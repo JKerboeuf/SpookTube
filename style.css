@@ -74,6 +74,25 @@ label {
 	box-shadow: 0 0 0 .2rem rgba(117, 117, 117, 0.25) !important;
 }
 
+.pagination {
+	--bs-pagination-color : black !important;
+	--bs-pagination-bg: white !important;
+	--bs-pagination-border-color: black !important;
+	--bs-pagination-border-radius: 0.65rem !important;
+	--bs-pagination-hover-color: white !important;
+	--bs-pagination-hover-bg: black !important;
+	--bs-pagination-hover-border-color: black !important;
+	--bs-pagination-focus-color: white !important;
+	--bs-pagination-focus-bg: black !important;
+	--bs-pagination-focus-box-shadow: 0 !important;
+	--bs-pagination-active-color: white !important;
+	--bs-pagination-active-bg: black !important;
+	--bs-pagination-active-border-color: black !important;
+	--bs-pagination-disabled-color: var(--bs-secondary-color);
+	--bs-pagination-disabled-bg: var(--bs-secondary-bg);
+	--bs-pagination-disabled-border-color: var(--bs-border-color);
+}
+
 .full-height {
 	height: 100% !important;
 	max-height: 100vh !important;
