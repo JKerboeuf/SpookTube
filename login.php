@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="d-flex flex-column min-vh-100 bg-light">
 	<nav class="navbar bg-white shadow-sm flex-shrink-0">
 		<div class="container d-flex justify-content-center">
-			<a class="navbar-brand text-dark fs-1" href="/">SPÖÖK <span class="bg-dark rounded-4 text-light p-2 px-3">TUBE</span></a>
+			<a class="navbar-brand text-dark fs-1" href="#">SPÖÖK <span class="bg-dark rounded-4 text-light p-2 px-3">TUBE</span></a>
 		</div>
 	</nav>
 
