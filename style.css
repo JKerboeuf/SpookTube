@@ -95,6 +95,14 @@ label {
 	max-height: 100vh !important;
 }
 
+.min-h-auto {
+	min-height: auto !important;
+}
+
+.min-h-0 {
+	min-height: 0 !important;
+}
+
 .video-wrapper,
 .col.d-flex {
 	min-height: 0;

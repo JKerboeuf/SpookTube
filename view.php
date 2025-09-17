@@ -97,27 +97,29 @@ $comments = $stmt->fetchAll();
 							<?= nl2br(h($v['description'])) ?>
 						</div>
 					</div>
-					<div class="p-2 mt-3">
+					<div class="p-2 mt-3 d-flex flex-column h-100 min-h-0">
 						<h3 class="mb-2 text-uppercase">Commentaires</h3>
-						<div class="mb-4 mx-1 p-1 rounded-6 row shadow bg-white">
-							<div class="col-2 my-auto">
+						<div class="mb-4 mx-1 p-1 rounded-6 row shadow bg-white min-h-auto">
+							<div class="col-3 my-auto">
 								<input type="checkbox" class="btn-check" id="includeTimecode" autocomplete="off">
-								<label class="btn btn-outline-dark rounded-6" for="includeTimecode"><i class="bi bi-stopwatch-fill"></i> Ajouter timecode</label><br>
+								<label class="btn btn-outline-dark rounded-6" for="includeTimecode"><i class="bi bi-square me-1" id="icon-timecode"></i> Ajouter timecode</label>
+								<i class="bi bi-question-circle-fill fs-5" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Le timecode actuel de la vidéo sera ajouté à ton commentaire"></i>
 							</div>
-							<div class="col-9 my-auto">
+							<div class="col-8 my-auto">
 								<input type="text" id="commentText" class="form-control border-0" maxlength="1000" placeholder="Ajouter un commentaire..."></textarea>
 							</div>
 							<div class="col-1 my-auto">
 								<button id="submitCommentBtn" class="btn btn-dark btn-lg rounded-6"><i class="bi bi-send-fill"></i></button>
-								<span id="commentResult" class="ms-2 text-muted" aria-live="polite"></span>
 							</div>
 						</div>
-						<ul id="commentsList" class="mx-3 list-group">
+						<ul id="commentsList" class="mx-3 list-group rounded-6 flex-grow-1 flex-shrink-1 overflow-y-auto min-h-0">
 							<?php foreach ($comments as $c): ?>
 								<li class="list-group-item" data-comment-id="<?= (int)$c['id'] ?>">
 									<div class="d-flex justify-content-between">
 										<div><strong><?= h($c['username']) ?></strong> <small class="text-muted"><?= h(format_timecode($c['created_at'])) ?></small></div>
-										<button class="btn btn-sm btn-dark rounded-6"><i class="bi bi-trash3-fill"></i></button>
+										<button class="btn btn-sm btn-dark rounded-6 delete-comment-btn" data-comment-id="<?= (int)$c['id'] ?>" title="Delete comment">
+											<i class="bi bi-trash3-fill"></i>
+										</button>
 									</div>
 									<div class="mt-2 comment-content">
 										<?php if ($c['timecode'] !== null): ?>
@@ -160,6 +162,58 @@ $comments = $stmt->fetchAll();
 			color: #000;
 		}
 	</style>
+
+	<script>
+		(function() {
+			const commentsList = document.getElementById('commentsList');
+
+			// delegate delete clicks
+			commentsList.addEventListener('click', function(ev) {
+				const btn = ev.target.closest('.delete-comment-btn');
+				if (!btn) return;
+
+				ev.preventDefault();
+				const commentId = btn.dataset.commentId;
+				if (!commentId) return;
+
+				if (!confirm('Supprimer ce commentaire ?')) return;
+
+				// optimistic: disable button while request in flight
+				btn.disabled = true;
+
+				fetch('delete_comment.php', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							comment_id: parseInt(commentId, 10)
+						}),
+						credentials: 'same-origin'
+					}).then(r => r.json())
+					.then(data => {
+						if (data && data.success) {
+							// remove the <li> from DOM
+							const li = btn.closest('li[data-comment-id="' + commentId + '"]');
+							if (li) {
+								// optional fade-out
+								li.style.transition = 'opacity 180ms ease';
+								li.style.opacity = '0';
+								setTimeout(() => li.remove(), 200);
+							}
+						} else {
+							alert((data && data.error) ? data.error : 'Could not delete comment');
+							btn.disabled = false;
+						}
+					}).catch(err => {
+						console.error(err);
+						alert('Network error');
+						btn.disabled = false;
+					});
+			});
+
+		})();
+	</script>
 
 	<script>
 		(function() {
@@ -225,6 +279,7 @@ $comments = $stmt->fetchAll();
 			const btn = document.getElementById('submitCommentBtn');
 			const textarea = document.getElementById('commentText');
 			const includeBox = document.getElementById('includeTimecode');
+			const includeBoxIcon = document.getElementById('icon-timecode');
 			const resultEl = document.getElementById('commentResult');
 			const commentsList = document.getElementById('commentsList');
 			const video = document.getElementById('player'); // ensure your <video id="player">
@@ -239,15 +294,25 @@ $comments = $stmt->fetchAll();
 				return `${String(m).padStart(1,'0')}:${String(sec).padStart(2,'0')}`;
 			}
 
+			includeBox.addEventListener('click', () => {
+				console.log('include timecode', includeBox.checked);
+				if (includeBox.checked) {
+					includeBoxIcon.classList.add('bi-check-square-fill');
+					includeBoxIcon.classList.remove('bi-square');
+				} else {
+					includeBoxIcon.classList.remove('bi-check-square-fill');
+					includeBoxIcon.classList.add('bi-square');
+				}
+			});
+
 			// post comment
 			btn.addEventListener('click', () => {
 				const text = textarea.value.trim();
 				if (!text) {
-					resultEl.textContent = 'Please write a comment.';
 					return;
 				}
 				btn.disabled = true;
-				resultEl.textContent = 'Posting…';
+				btn.innerHTML = `<i class="bi bi-hourglass-split"></i>`;
 
 				// optionally include current timecode (seconds)
 				let timecode = null;
@@ -274,7 +339,7 @@ $comments = $stmt->fetchAll();
 					}).then(r => r.json())
 					.then(data => {
 						if (!data || !data.success) {
-							resultEl.textContent = data && data.error ? data.error : 'Failed to post comment';
+							console.log(data && data.error ? data.error : 'Failed to post comment');
 						} else {
 							// append returned HTML snippet to comments list (prepend so newest shows first)
 							const li = document.createElement('div');
@@ -285,20 +350,20 @@ $comments = $stmt->fetchAll();
 								commentsList.insertBefore(added, commentsList.firstChild);
 								textarea.value = '';
 								includeBox.checked = false;
-								resultEl.textContent = 'Posted';
+								includeBoxIcon.classList.remove('bi-check-square-fill');
+								includeBoxIcon.classList.add('bi-square');
+								btn.innerHTML = `<i class="bi bi-send-check-fill"></i>`;
 								// briefly highlight
-								added.classList.add('bg-success', 'bg-opacity-10');
-								setTimeout(() => added.classList.remove('bg-success', 'bg-opacity-10'), 1200);
 							} else {
-								resultEl.textContent = 'Posted (but could not update UI)';
+								console.log('Posted (but could not update UI)');
 							}
 						}
 					}).catch(err => {
 						console.error(err);
-						resultEl.textContent = 'Network error';
+						btn.innerHTML = `<i class="bi bi-x-lg"></i>`;
 					}).finally(() => {
 						btn.disabled = false;
-						setTimeout(() => resultEl.textContent = '', 2000);
+						setTimeout(() => btn.innerHTML = `<i class="bi bi-send-fill"></i>`, 2000);
 					});
 			});
 
@@ -464,6 +529,10 @@ $comments = $stmt->fetchAll();
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
 		integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
 		crossorigin="anonymous"></script>
+	<script>
+		const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+		const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+	</script>
 
 
 </body>

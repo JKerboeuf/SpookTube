@@ -66,16 +66,19 @@ try {
 
     // prepare HTML snippet (safe: we escape content)
     $timecodeHtml = $c['timecode'] !== null
-        ? '<a href="#" class="timecode-link" data-seconds="' . (int)$c['timecode'] . '">[' . h_local(fmt_timecode($c['timecode'])) . ']</a>'
+		? '<button class="timecode-link btn btn-sm btn-dark rounded-6" data-seconds="' . (int)$c['timecode'] . '"><i class="bi bi-play-fill"></i> ' . h(fmt_timecode($c['timecode'])) . '</button> '
         : '';
 
     $html = '<li class="list-group-item" data-comment-id="' . $c['id'] . '">'
         . '<div class="d-flex justify-content-between">'
-        . '<div><strong>' . h_local($c['username']) . '</strong> <small class="text-muted">' . h_local($c['created_at']) . '</small></div>'
-        . ($timecodeHtml ? '<div>' . $timecodeHtml . '</div>' : '')
+        . '<div><strong>' . h_local($c['username']) . '</strong> <small class="text-muted">' . h(format_timecode($c['created_at'])) . '</small></div>'
+		. '<button class="btn btn-sm btn-dark rounded-6 delete-comment-btn" data-comment-id="' . (int)$c['id'] . '" title="Delete comment">'
+		. '<i class="bi bi-trash3-fill"></i></button>'
         . '</div>'
-        . '<div class="mt-2 comment-content">' . nl2br(h_local($c['content'])) . '</div>'
-        . '</li>';
+        . '<div class="mt-2 comment-content">'
+        . ($timecodeHtml ? $timecodeHtml : '')
+		. '<div class="d-inline">' . nl2br(h_local($c['content'])) . '</div>'
+        . '</div></li>';
 
     echo json_encode(['success' => true, 'html' => $html]);
     exit;
