@@ -152,12 +152,13 @@ $endItem = min($offset + count($videos), $total);
 						<div class="col my-2">
 							<div class="card card-white shadow border-0 rounded-5">
 								<?php if (!empty($v['thumbnail'])): ?>
-									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb rounded-top-5">
+									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" loading="lazy" class="thumb rounded-top-5">
 								<?php else: ?>
 									<img class="thumb lazy-thumb"
 										data-video-src="serve_video.php?f=<?= urlencode($v['filename']) ?>"
 										data-video-id="<?= (int)$v['id'] ?>"
 										alt="thumb"
+										loading="lazy"
 										src="data:image/svg+xml;charset=UTF-8,<?= rawurlencode('<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;320&quot; height=&quot;180&quot;><rect width=&quot;100%&quot; height=&quot;100%&quot; fill=&quot;%23e9ecef&quot; /><text x=&quot;50%&quot; y=&quot;50%&quot; dominant-baseline=&quot;middle&quot; text-anchor=&quot;middle&quot; font-family=&quot;Arial&quot; font-size=&quot;14&quot; fill=&quot;%236c757d&quot;>Loading…</text></svg>') ?>" />
 								<?php endif; ?>
 								<div class="card-body">
