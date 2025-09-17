@@ -57,6 +57,11 @@ label {
 	border-bottom-right-radius: 0.65rem !important;
 }
 
+.rounded-top-6 {
+	border-top-right-radius: 0.65rem !important;
+	border-top-left-radius: 0.65rem !important;
+}
+
 .btn-secondary {
 	background-color: #ebecec !important;
 	border-color: #ebecec !important;

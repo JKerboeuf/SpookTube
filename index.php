@@ -140,12 +140,12 @@ $endItem = min($offset + count($videos), $total);
 					<i class="bi bi-camera-video-off-fill fs-1"></i>
 				</h1>
 			<?php else: ?>
-				<div class="row row-cols-4 g-5 mt-1">
+				<div class="row row-cols-4 g-5 mt-1 mb-4">
 					<?php foreach ($videos as $v): list($avg, $cnt) = avg_rating($pdo, $v['id']); ?>
 						<div class="col mt-1">
 							<div class="card card-white shadow-sm border-0 rounded-5">
 								<?php if (!empty($v['thumbnail'])): ?>
-									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb">
+									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb rounded-top-6">
 								<?php else: ?>
 									<img class="thumb lazy-thumb"
 										data-video-src="serve_video.php?f=<?= urlencode($v['filename']) ?>"
