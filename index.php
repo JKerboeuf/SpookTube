@@ -150,7 +150,7 @@ $endItem = min($offset + count($videos), $total);
 				<div class="row row-cols-4 g-5 mt-1 mb-4">
 					<?php foreach ($videos as $v): list($avg, $cnt) = avg_rating($pdo, $v['id']); ?>
 						<div class="col my-2">
-							<div class="card card-white shadow-sm border-0 rounded-5">
+							<div class="card card-white shadow border-0 rounded-5">
 								<?php if (!empty($v['thumbnail'])): ?>
 									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb rounded-top-5">
 								<?php else: ?>
