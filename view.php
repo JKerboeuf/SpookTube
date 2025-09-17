@@ -117,9 +117,11 @@ $comments = $stmt->fetchAll();
 								<li class="list-group-item" data-comment-id="<?= (int)$c['id'] ?>">
 									<div class="d-flex justify-content-between">
 										<div><strong><?= h($c['username']) ?></strong> <small class="text-muted"><?= h(format_timecode($c['created_at'])) ?></small></div>
-										<button class="btn btn-sm btn-dark rounded-6 delete-comment-btn" data-comment-id="<?= (int)$c['id'] ?>" title="Delete comment">
-											<i class="bi bi-trash3-fill"></i>
-										</button>
+										<?php if ($c['user_id'] == $_SESSION['user_id'] || $_SESSION['user_id'] == 1): ?>
+											<button class="btn btn-sm btn-dark rounded-6 delete-comment-btn" data-comment-id="<?= (int)$c['id'] ?>" title="Delete comment">
+												<i class="bi bi-trash3-fill"></i>
+											</button>
+										<?php endif; ?>
 									</div>
 									<div class="mt-2 comment-content">
 										<?php if ($c['timecode'] !== null): ?>
