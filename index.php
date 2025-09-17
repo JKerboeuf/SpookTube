@@ -44,7 +44,14 @@ try {
 	$total = (int)$stmt->fetchColumn();
 
 	// fetch page rows with LIMIT/OFFSET (bind as integers)
-	$selectSql = "SELECT v.*, u.username, (f.id IS NOT NULL) AS is_fav $sqlBase $where ORDER BY v.file_date DESC LIMIT :limit OFFSET :offset";
+	$selectSql = "
+		SELECT v.*, u.username, (f.id IS NOT NULL) AS is_fav,
+		(SELECT COUNT(*) FROM comments c WHERE c.video_id = v.id) AS comment_count
+		$sqlBase
+		$where
+		ORDER BY v.file_date DESC
+		LIMIT :limit OFFSET :offset
+	";
 	$stmt = $pdo->prepare($selectSql);
 	foreach ($params as $k => $v) $stmt->bindValue($k, $v);
 	$stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
@@ -142,10 +149,10 @@ $endItem = min($offset + count($videos), $total);
 			<?php else: ?>
 				<div class="row row-cols-4 g-5 mt-1 mb-4">
 					<?php foreach ($videos as $v): list($avg, $cnt) = avg_rating($pdo, $v['id']); ?>
-						<div class="col mt-1">
+						<div class="col my-2">
 							<div class="card card-white shadow-sm border-0 rounded-5">
 								<?php if (!empty($v['thumbnail'])): ?>
-									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb rounded-top-6">
+									<img src="serve_thumb.php?f=<?= urlencode($v['thumbnail']) ?>" alt="thumb" class="thumb rounded-top-5">
 								<?php else: ?>
 									<img class="thumb lazy-thumb"
 										data-video-src="serve_video.php?f=<?= urlencode($v['filename']) ?>"
@@ -156,7 +163,10 @@ $endItem = min($offset + count($videos), $total);
 								<div class="card-body">
 									<a href="view.php?id=<?= $v['id'] ?>" class="card-title h5 text-decoration-none stretched-link"><?= h($v['title']) ?></a>
 									<div class="chars"><i class="bi bi-person-standing"></i><?= h($v['characters']) ?></div>
-									<div class="rating"><?= render_stars($avg, $cnt) ?> <?= $v['is_fav'] ? '<i class="bi bi-heart-fill"></i>' : '' ?>
+									<div class="rating">
+										<?= render_stars($avg, $cnt) ?>
+										<i class="ms-2 bi bi-chat-dots-fill"></i> <?= (int)$v['comment_count'] ?>
+										<?= $v['is_fav'] ? '<i class="ms-2 bi bi-heart-fill"></i>' : '' ?>
 									</div>
 									<div class="filedate"><i class="bi bi-calendar3"></i> <?= h(format_date_ddmmyyyy($v['file_date'])) ?></div>
 								</div>
