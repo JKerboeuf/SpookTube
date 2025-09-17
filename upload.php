@@ -7,13 +7,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	if (!isset($_FILES['video'])) {
 		$errors[] = 'No file uploaded.';
 	} else {
+		// --- Validate uploaded file is .webm (server-side) ---
 		$file = $_FILES['video'];
-		if ($file['error'] !== UPLOAD_ERR_OK) $errors[] = 'Upload error code: ' . $file['error'];
-		if ($file['size'] > $config['max_upload_bytes']) $errors[] = 'File too large.';
-		$finfo = finfo_open(FILEINFO_MIME_TYPE);
-		$mime = finfo_file($finfo, $file['tmp_name']);
-		finfo_close($finfo);
-		if (strpos($mime, 'video/') !== 0) $errors[] = 'Only video files allowed (detected: ' . $mime . ').';
+		if ($file['error'] !== UPLOAD_ERR_OK) {
+			$errors[] = 'Upload error code: ' . $file['error'];
+		} else {
+			// size check (keep your existing max check)
+			if ($file['size'] > $config['max_upload_bytes']) {
+				$errors[] = 'File too large.';
+			} else {
+				// extension check (client filename)
+				$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+				if ($ext !== 'webm') {
+					$errors[] = 'Only .webm files are allowed (extension mismatch).';
+				} else {
+					// MIME type check using finfo
+					$finfo = finfo_open(FILEINFO_MIME_TYPE);
+					$mime = $finfo ? finfo_file($finfo, $file['tmp_name']) : '';
+					if ($finfo) finfo_close($finfo);
+
+					// Accept 'video/webm' and some browsers may return 'application/octet-stream' for unknown,
+					// so require video/webm strictly to be safe:
+					if ($mime !== 'video/webm') {
+						$errors[] = 'Only WebM videos (video/webm) are allowed (detected: ' . htmlspecialchars($mime) . ').';
+					}
+				}
+			}
+		}
 
 		if (!$errors) {
 			$ext = pathinfo($file['name'], PATHINFO_EXTENSION);
@@ -88,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				<div class="col h-100 d-flex flex-column">
 					<form method="post" enctype="multipart/form-data" id="uploadForm">
 						<label for="videoInput" class="form-label"><i class="bi bi-file-earmark-play-fill"></i> Fichier vidéo</label>
-						<input class="form-control form-control-lg" type="file" id="videoInput" name="video" accept="video/*" required>
+						<input class="form-control form-control-lg" type="file" id="videoInput" name="video"  accept="video/webm" required>
 						<input type="hidden" name="file_date" id="file_date_input">
 						<label for="title" class="form-label"><i class="bi bi-type"></i> Titre</label>
 						<input type="text" class="form-control" id="title" name="title" required>
