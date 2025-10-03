@@ -65,6 +65,20 @@ try {
 	$videos = [];
 }
 
+// After fetching $videos:
+$videoIds = array_column($videos, 'id');
+$ratings = [];
+if ($videoIds) {
+	$in = implode(',', array_map('intval', $videoIds));
+	$stmt = $pdo->query("SELECT video_id, AVG(rating) AS avg, COUNT(*) AS cnt FROM ratings WHERE video_id IN ($in) GROUP BY video_id");
+	foreach ($stmt as $row) {
+		$ratings[$row['video_id']] = [
+			'avg' => $row['avg'] ? round($row['avg'], 2) : null,
+			'cnt' => (int)$row['cnt']
+		];
+	}
+}
+
 // helper to preserve query params while changing page
 function build_query(array $overrides = [])
 {
@@ -148,7 +162,10 @@ $endItem = min($offset + count($videos), $total);
 				</h1>
 			<?php else: ?>
 				<div class="row row-cols-4 g-5 mt-1 mb-4">
-					<?php foreach ($videos as $v): list($avg, $cnt) = avg_rating($pdo, $v['id']); ?>
+					<?php foreach ($videos as $v):
+						$avg = $ratings[$v['id']]['avg'] ?? null;
+						$cnt = $ratings[$v['id']]['cnt'] ?? 0;
+					?>
 						<div class="col my-2">
 							<div class="card card-white shadow border-0 rounded-5">
 								<?php if (!empty($v['thumbnail'])): ?>

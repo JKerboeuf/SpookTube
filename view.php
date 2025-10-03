@@ -2,26 +2,39 @@
 require __DIR__ . '/init.php';
 require_login();
 $id = (int)($_GET['id'] ?? 0);
-$stmt = $pdo->prepare('SELECT v.*, u.username FROM videos v JOIN users u ON v.user_id = u.id WHERE v.id = ?');
-$stmt->execute([$id]);
+
+// Fetch video, user, avg rating, count, my rating, favorite status in one query
+$stmt = $pdo->prepare('
+	SELECT v.*, u.username,
+		(SELECT AVG(rating) FROM ratings WHERE video_id = v.id) AS avg_rating,
+		(SELECT COUNT(*) FROM ratings WHERE video_id = v.id) AS rating_count,
+		(SELECT rating FROM ratings WHERE video_id = v.id AND user_id = :uid) AS my_rating,
+		EXISTS(SELECT 1 FROM favorites WHERE user_id = :uid AND video_id = v.id) AS is_fav
+	FROM videos v
+	JOIN users u ON v.user_id = u.id
+	WHERE v.id = :vid
+');
+$stmt->execute([':vid' => $id, ':uid' => $_SESSION['user_id']]);
 $v = $stmt->fetch();
 if (!$v) {
 	http_response_code(404);
 	echo 'Not found';
 	exit;
 }
-list($avg, $cnt) = avg_rating($pdo, $id);
+$avg = $v['avg_rating'] !== null ? round($v['avg_rating'], 2) : null;
+$cnt = (int)$v['rating_count'];
+$myRating = $v['my_rating'] ? (int)$v['my_rating'] : 0;
+$isFav = (bool)$v['is_fav'];
 
-$stmt = $pdo->prepare('SELECT rating FROM ratings WHERE video_id = ? AND user_id = ?');
-$stmt->execute([$id, $_SESSION['user_id']]);
-$myRating = $stmt->fetchColumn();
-
-$stmt = $pdo->prepare('SELECT 1 FROM favorites WHERE user_id = ? AND video_id = ?');
-$stmt->execute([$_SESSION['user_id'], $v['id']]);
-$isFav = (bool)$stmt->fetchColumn();
-
-$stmt = $pdo->prepare('SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.id WHERE c.video_id = ? ORDER BY c.created_at DESC');
-$stmt->execute([$v['id']]);
+// Fetch comments (with user info)
+$stmt = $pdo->prepare('
+	SELECT c.*, u.username
+	FROM comments c
+	JOIN users u ON c.user_id = u.id
+	WHERE c.video_id = ?
+	ORDER BY c.created_at DESC
+');
+$stmt->execute([$id]);
 $comments = $stmt->fetchAll();
 ?>
 <!doctype html>
