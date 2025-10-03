@@ -12,7 +12,6 @@ if (!is_file($path)) {
 	http_response_code(404);
 	exit;
 }
-
 $size = filesize($path);
 $mime = mime_content_type($path) ?: 'application/octet-stream';
 $fp = fopen($path, 'rb');
@@ -60,17 +59,13 @@ if (isset($_SERVER['HTTP_RANGE'])) {
 // Send headers
 if ($httpStatus === 206) {
 	header('HTTP/1.1 206 Partial Content');
+	header(sprintf('Content-Range: bytes %d-%d/%d', $start, $end, $size));
 } else {
 	header('HTTP/1.1 200 OK');
 }
 header('Content-Type: ' . $mime);
 header('Content-Length: ' . $length);
 header('Accept-Ranges: bytes');
-if ($httpStatus === 206) {
-	header(sprintf('Content-Range: bytes %d-%d/%d', $start, $end, $size));
-}
-
-// Optional: cache headers (adjust for your needs)
 header('Cache-Control: public, max-age=86400');
 header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 86400) . ' GMT');
 

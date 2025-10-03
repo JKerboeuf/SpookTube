@@ -21,9 +21,7 @@ if ($comment_id <= 0) {
 	echo json_encode(['success' => false, 'error' => 'invalid_id']);
 	exit;
 }
-
 try {
-	// fetch owner of the comment
 	$stmt = $pdo->prepare('SELECT user_id FROM comments WHERE id = ? LIMIT 1');
 	$stmt->execute([$comment_id]);
 	$owner = $stmt->fetchColumn();
@@ -32,18 +30,13 @@ try {
 		echo json_encode(['success' => false, 'error' => 'not_found']);
 		exit;
 	}
-
-	// only allow the comment owner to delete (you can add admin/video-owner check here if desired)
 	if ((int)$owner !== (int)$_SESSION['user_id'] && $_SESSION['user_id'] != 1) {
 		http_response_code(403);
 		echo json_encode(['success' => false, 'error' => 'forbidden']);
 		exit;
 	}
-
-	// perform delete
 	$stmt = $pdo->prepare('DELETE FROM comments WHERE id = ?');
 	$stmt->execute([$comment_id]);
-
 	echo json_encode(['success' => true]);
 	exit;
 } catch (Exception $e) {

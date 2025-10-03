@@ -8,6 +8,7 @@ header('Content-Type: application/json');
 
 if (!is_logged_in()) {
 	http_response_code(401);
+	header('Content-Type: application/json');
 	echo json_encode(['success' => false, 'error' => 'login']);
 	exit;
 }
@@ -17,6 +18,7 @@ $raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
 if (!$data) {
 	http_response_code(400);
+	header('Content-Type: application/json');
 	echo json_encode(['success' => false, 'error' => 'invalid_json']);
 	exit;
 }
@@ -26,6 +28,7 @@ $filesize = isset($data['filesize']) ? (int)$data['filesize'] : 0;
 
 if ($fileDateMs <= 0 || $filesize <= 0) {
 	http_response_code(400);
+	header('Content-Type: application/json');
 	echo json_encode(['success' => false, 'error' => 'missing_fields']);
 	exit;
 }
@@ -53,16 +56,15 @@ try {
 	$stmt = $pdo->prepare($sql);
 	$stmt->execute([$fileDate, $fileDate, $filesize, $absTolerance, $fileDate]);
 	$rows = $stmt->fetchAll();
-	// sanitize output
 	$out = [];
 	foreach ($rows as $r) {
 		$out[] = [
 			'id' => (int)$r['id'],
-			'title' => $r['title'],
-			'characters' => $r['characters'],
+			'title' => htmlspecialchars($r['title'], ENT_QUOTES),
+			'characters' => htmlspecialchars($r['characters'], ENT_QUOTES),
 			'file_date' => $r['file_date'],
 			'filesize' => (int)$r['filesize'],
-			'username' => $r['username'],
+			'username' => htmlspecialchars($r['username'], ENT_QUOTES),
 			'filename' => $r['filename'],
 			'url' => 'view.php?id=' . (int)$r['id'],
 		];
@@ -70,5 +72,6 @@ try {
 	echo json_encode(['success' => true, 'matches' => $out]);
 } catch (Exception $e) {
 	http_response_code(500);
+	header('Content-Type: application/json');
 	echo json_encode(['success' => false, 'error' => 'db_error', 'msg' => $e->getMessage()]);
 }

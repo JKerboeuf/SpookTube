@@ -52,7 +52,9 @@ if (!$ext) $ext = 'webp';
 $filename = bin2hex(random_bytes(8)) . '.' . $ext;
 $target = rtrim($config['thumb_dir'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $filename;
 
-if (!is_dir($config['thumb_dir'])) mkdir($config['thumb_dir'], 0775, true);
+if (!is_dir($config['thumb_dir'])) {
+	mkdir($config['thumb_dir'], 0775, true);
+}
 
 if (!move_uploaded_file($_FILES['thumbnail']['tmp_name'], $target)) {
 	http_response_code(500);

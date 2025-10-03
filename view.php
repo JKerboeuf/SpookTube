@@ -176,9 +176,7 @@ $comments = $stmt->fetchAll();
 
 				ev.preventDefault();
 				const commentId = btn.dataset.commentId;
-				if (!commentId) return;
-
-				if (!confirm('Supprimer ce commentaire ?')) return;
+				if (!commentId || !confirm('Supprimer ce commentaire ?')) return;
 
 				// optimistic: disable button while request in flight
 				btn.disabled = true;
@@ -204,11 +202,10 @@ $comments = $stmt->fetchAll();
 								setTimeout(() => li.remove(), 200);
 							}
 						} else {
-							alert((data && data.error) ? data.error : 'Could not delete comment');
+							alert(data?.error || 'Could not delete comment');
 							btn.disabled = false;
 						}
-					}).catch(err => {
-						console.error(err);
+					}).catch(() => {
 						alert('Network error');
 						btn.disabled = false;
 					});
@@ -239,37 +236,21 @@ $comments = $stmt->fetchAll();
 					}),
 					credentials: 'same-origin'
 				}).then(r => r.json()).then(data => {
-					if (!data || !data.success) {
+					if (!data?.success) {
 						// revert on error
-						if (wasFav) {
-							btn.setAttribute('aria-pressed', 'true');
-							btn.classList.add('active');
-						} else {
-							btn.setAttribute('aria-pressed', 'false');
-							btn.classList.remove('active');
-						}
-						alert(data && data.error ? data.error : 'Could not toggle favorite');
+						btn.setAttribute('aria-pressed', wasFav ? 'true' : 'false');
+						btn.classList.toggle('active', wasFav);
+						alert(data?.error || 'Could not toggle favorite');
 					} else {
-						if (wasFav) {
-							btn.setAttribute('aria-pressed', 'false');
-							btn.classList.remove('active');
-							btn.innerHTML = '<i class="bi bi-heart"></i> Retiré des favoris';
-						} else {
-							btn.setAttribute('aria-pressed', 'true');
-							btn.classList.add('active');
-							btn.innerHTML = '<i class="bi bi-heart-fill"></i> Ajouté aux favoris';
-						}
+						btn.setAttribute('aria-pressed', wasFav ? 'false' : 'true');
+						btn.classList.toggle('active', !wasFav);
+						btn.innerHTML = wasFav ?
+							'<i class="bi bi-heart"></i> Retiré des favoris' :
+							'<i class="bi bi-heart-fill"></i> Ajouté aux favoris';
 					}
-				}).catch(err => {
-					console.error(err);
-					// revert UI
-					if (wasFav) {
-						btn.setAttribute('aria-pressed', 'true');
-						btn.classList.add('active');
-					} else {
-						btn.setAttribute('aria-pressed', 'false');
-						btn.classList.remove('active');
-					}
+				}).catch(() => {
+					btn.setAttribute('aria-pressed', wasFav ? 'true' : 'false');
+					btn.classList.toggle('active', wasFav);
 					alert('Network error');
 				});
 			});
@@ -282,49 +263,23 @@ $comments = $stmt->fetchAll();
 			const textarea = document.getElementById('commentText');
 			const includeBox = document.getElementById('includeTimecode');
 			const includeBoxIcon = document.getElementById('icon-timecode');
-			const resultEl = document.getElementById('commentResult');
 			const commentsList = document.getElementById('commentsList');
 			const video = document.getElementById('player'); // ensure your <video id="player">
-
-			// helper to format seconds to m:ss or h:mm:ss for display (client-side)
-			function fmtTimecode(s) {
-				s = Math.max(0, Math.floor(s || 0));
-				const h = Math.floor(s / 3600);
-				const m = Math.floor((s % 3600) / 60);
-				const sec = s % 60;
-				if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-				return `${String(m).padStart(1,'0')}:${String(sec).padStart(2,'0')}`;
-			}
-
 			includeBox.addEventListener('click', () => {
-				console.log('include timecode', includeBox.checked);
-				if (includeBox.checked) {
-					includeBoxIcon.classList.add('bi-check-square-fill');
-					includeBoxIcon.classList.remove('bi-square');
-				} else {
-					includeBoxIcon.classList.remove('bi-check-square-fill');
-					includeBoxIcon.classList.add('bi-square');
-				}
+				includeBoxIcon.classList.toggle('bi-check-square-fill', includeBox.checked);
+				includeBoxIcon.classList.toggle('bi-square', !includeBox.checked);
 			});
-
-			// post comment
 			btn.addEventListener('click', () => {
 				const text = textarea.value.trim();
-				if (!text) {
-					return;
-				}
+				if (!text) return;
 				btn.disabled = true;
 				btn.innerHTML = `<i class="bi bi-hourglass-split"></i>`;
 
 				// optionally include current timecode (seconds)
 				let timecode = null;
 				if (includeBox.checked && video) {
-					try {
-						const t = Math.floor(video.currentTime || 0);
-						if (!Number.isNaN(t) && t >= 0) timecode = t;
-					} catch (e) {
-						timecode = null;
-					}
+					const t = Math.floor(video.currentTime || 0);
+					if (!Number.isNaN(t) && t >= 0) timecode = t;
 				}
 
 				fetch('post_comment.php', {
@@ -340,13 +295,11 @@ $comments = $stmt->fetchAll();
 						credentials: 'same-origin'
 					}).then(r => r.json())
 					.then(data => {
-						if (!data || !data.success) {
-							console.log(data && data.error ? data.error : 'Failed to post comment');
+						if (!data?.success) {
+							console.log(data?.error || 'Failed to post comment');
 						} else {
-							// append returned HTML snippet to comments list (prepend so newest shows first)
 							const li = document.createElement('div');
 							li.innerHTML = data.html;
-							// data.html contains <li>…</li>, so we append its child
 							const added = li.firstElementChild;
 							if (added) {
 								commentsList.insertBefore(added, commentsList.firstChild);
@@ -355,41 +308,29 @@ $comments = $stmt->fetchAll();
 								includeBoxIcon.classList.remove('bi-check-square-fill');
 								includeBoxIcon.classList.add('bi-square');
 								btn.innerHTML = `<i class="bi bi-send-check-fill"></i>`;
-								// briefly highlight
-							} else {
-								console.log('Posted (but could not update UI)');
 							}
 						}
-					}).catch(err => {
-						console.error(err);
+					}).catch(() => {
 						btn.innerHTML = `<i class="bi bi-x-lg"></i>`;
 					}).finally(() => {
 						btn.disabled = false;
 						setTimeout(() => btn.innerHTML = `<i class="bi bi-send-fill"></i>`, 2000);
 					});
 			});
-
-			// delegate click on timecode links to seek the video
 			commentsList.addEventListener('click', function(ev) {
 				const a = ev.target.closest('.timecode-link');
 				if (!a) return;
 				ev.preventDefault();
 				const seconds = parseInt(a.dataset.seconds, 10);
 				if (Number.isFinite(seconds) && video) {
-					try {
-						video.currentTime = seconds;
-						video.scrollIntoView({
-							behavior: 'smooth',
-							block: 'center'
-						});
-						// optionally start playback:
-						video.play().catch(() => {});
-					} catch (e) {
-						console.warn('Could not seek video', e);
-					}
+					video.currentTime = seconds;
+					video.scrollIntoView({
+						behavior: 'smooth',
+						block: 'center'
+					});
+					video.play().catch(() => {});
 				}
 			});
-
 		})();
 	</script>
 
@@ -475,7 +416,7 @@ $comments = $stmt->fetchAll();
 			// submit rating via fetch to rate.php
 			let pending = false;
 
-			function submitRating(value, clickedStar) {
+			function submitRating(value) {
 				if (pending) return;
 				pending = true;
 				// give immediate UI feedback
@@ -492,7 +433,7 @@ $comments = $stmt->fetchAll();
 						})
 					}).then(resp => resp.json())
 					.then(data => {
-						if (data && data.success) {
+						if (data?.success) {
 							// update average and count
 							const newAvg = data.avg;
 							const newCount = data.count;
@@ -505,8 +446,7 @@ $comments = $stmt->fetchAll();
 							rateResultEl.innerHTML = '<span class="rating-toast text-danger">' + (data.error || 'Erreur') + '</span>';
 						}
 					})
-					.catch(err => {
-						console.error(err);
+					.catch(() => {
 						rateResultEl.innerHTML = '<span class="rating-toast text-danger">Erreur réseau</span>';
 					})
 					.finally(() => {
@@ -533,7 +473,7 @@ $comments = $stmt->fetchAll();
 		crossorigin="anonymous"></script>
 	<script>
 		const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-		const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+		tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 	</script>
 
 

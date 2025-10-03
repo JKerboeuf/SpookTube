@@ -6,7 +6,10 @@ $f = $_GET['f'] ?? '';
 $f = basename($f);
 $config = require __DIR__ . '/config.php';
 $path = $config['thumb_dir'] . DIRECTORY_SEPARATOR . $f;
-if (!is_file($path)) { http_response_code(404); exit; }
+if (!is_file($path)) {
+	http_response_code(404);
+	exit;
+}
 $mime = mime_content_type($path);
 header('Content-Type: ' . $mime);
 header('Content-Length: ' . filesize($path));
