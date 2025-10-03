@@ -80,7 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 
 <body class="d-flex flex-column min-vh-100 bg-light">
-
 	<nav class="navbar bg-white shadow-sm flex-shrink-0">
 		<div class="container d-flex justify-content-between">
 			<a class="navbar-brand text-dark fs-1" href="/index.php">SPÖÖK <span class="bg-dark rounded-4 text-light p-2 px-3">TUBE</span></a>
@@ -90,8 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			</div>
 		</div>
 	</nav>
-
-	<!-- main: grows to fill remaining viewport height -->
 	<main class="flex-grow-1 d-flex overflow-hidden">
 		<div class="container-fluid d-flex flex-column w-100">
 			<div class="row flex-grow-1 gx-3">
@@ -108,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				<div class="col h-100 d-flex flex-column">
 					<form method="post" enctype="multipart/form-data" id="uploadForm">
 						<label for="videoInput" class="form-label"><i class="bi bi-file-earmark-play-fill"></i> Fichier vidéo</label>
-						<input class="form-control form-control-lg" type="file" id="videoInput" name="video"  accept="video/webm" required>
+						<input class="form-control form-control-lg" type="file" id="videoInput" name="video" accept="video/webm" required>
 						<input type="hidden" name="file_date" id="file_date_input">
 						<label for="title" class="form-label"><i class="bi bi-type"></i> Titre</label>
 						<input type="text" class="form-control" id="title" name="title" required>
@@ -123,10 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			</div>
 		</div>
 	</main>
-
-
-
-
 	<div class="modal fade bg-light" id="dupModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog modal-xl modal-dialog-scrollable bg-light rounded-6">
 			<div class="modal-content rounded-5 shadow">
@@ -138,7 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				<div class="modal-body bg-light">
 					<div class="container-fluid">
 						<div class="row gy-3">
-							<!-- Left: Local preview -->
 							<div class="col-md-5">
 								<h6>Ta video</h6>
 								<div class="border p-2 rounded-6 bg-white">
@@ -148,8 +140,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 									<div id="localInfo" class="mt-2 text-muted"></div>
 								</div>
 							</div>
-
-							<!-- Right: Matches list -->
 							<div class="col-md-7">
 								<h6>Vidéos similaires</h6>
 								<div id="dupMatches" class="list-group rounded-6"></div>
@@ -170,7 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
 		integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
 		crossorigin="anonymous"></script>
-
 	<script>
 		(function() {
 			const form = document.getElementById('uploadForm');
@@ -231,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 						<div style="flex:0 0 1">${thumbHtml}</div>
 						<div style="flex:1">
 							<div class="fw-bold">${escapeHtml(m.title)}</div>
-							<div class="text-muted small">By ${escapeHtml(m.username)}
+							<div class="text-muted small">Par ${escapeHtml(m.username)}
 							<br>${escapeHtml(m.file_date)}
 							<br>${escapeHtml(m.filesize)} octets</div>
 							<div class="mt-2"><a class="btn btn-dark rounded-6" href="${escapeHtml(m.url)}" target="_blank" rel="noopener">Ouvrir <i class="bi bi-box-arrow-up-right"></i></a></div>
@@ -358,10 +347,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 		})();
 	</script>
-
-
-
-
 	<script>
 		// capture the file's last modified timestamp (from browser) and send as ms since epoch
 		const input = document.getElementById('videoInput');
