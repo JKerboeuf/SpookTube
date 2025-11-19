@@ -7,7 +7,7 @@ A private video-sharing platform built for me and my friends to upload, review, 
 - Private access — only accessible to users whose accounts I manually create.
 - Video posting — users can upload clips, add titles, descriptions, and players.
 - Interactions — comment, rate, and favorite videos.
-- Search — find videos by name or by players appearing in them.
+- Search — find videos by title or by players appearing in them.
 - Video management — authors can edit their uploaded videos.
 - Time-coded comments — comments may include a timestamp; clicking it jumps the video to that moment.
 - Duplicate detection — uploaded videos are checked to prevent duplicates (even from different users).
@@ -35,7 +35,6 @@ It also contains a duplicated video check, to avoid uploading the same video sev
 
 ### Home page
 
-The home page :
 ![Spooktube homepage screenshot](https://i.imgur.com/b9qVUq5.png)
 
 ### Video page
